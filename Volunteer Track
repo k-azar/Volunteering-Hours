@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>VolunteerTrack</title>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #F5F4F0;
+    --surface: #FFFFFF;
+    --surface2: #EDECEA;
+    --border: rgba(0,0,0,0.10);
+    --border-strong: rgba(0,0,0,0.18);
+    --text: #1A1916;
+    --text-muted: #6B6B60;
+    --text-faint: #AEADA8;
+    --teal: #1B5E35;
+    --teal-bg: #E2EFE8;
+    --teal-text: #133F24;
+    --amber: #9A7A1A;
+    --amber-bg: #FBF3DC;
+    --amber-text: #6B5200;
+    --red: #C0392B;
+    --red-bg: #FAECE7;
+    --red-text: #7B2013;
+    --gold: #C9A84C;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+
+  /* GLOBAL NAV */
+  .global-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 1.25rem;
+    background: var(--teal);
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .global-nav .nav-title {
+    font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.85);
+    letter-spacing: 0.02em;
+  }
+  .global-nav .ic-logo {
+    width: 36px; height: 36px; border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--gold);
+  }
+
+  /* APP SHELL */
+  .app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--bg); position: relative; overflow: hidden; }
+
+  /* SCREENS */
+  .screen { display: none; padding: 1.25rem 1.25rem 2rem; min-height: 100vh; animation: fadeIn .18s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* TOPBAR */
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .back-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text-muted); background: none; border: none; cursor: pointer; padding: 4px 0; font-family: inherit; }
+  .back-btn:hover { color: var(--text); }
+
+  /* LOGO / WORDMARK */
+  .wordmark { display: flex; align-items: center; gap: 8px; margin-bottom: 0.4rem; }
+  .wordmark-icon { width: 32px; height: 32px; background: var(--teal); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .wordmark-icon svg { width: 18px; height: 18px; stroke: white; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .wordmark-text { font-size: 17px; font-weight: 500; letter-spacing: -0.3px; }
+
+  .page-title { font-size: 22px; font-weight: 500; letter-spacing: -0.4px; margin-bottom: 0.35rem; }
+  .page-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6; }
+
+  /* INPUTS */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; padding: 11px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 15px; font-family: inherit;
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+    transition: border-color .15s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--teal); }
+
+  /* BUTTONS */
+  .btn {
+    width: 100%; padding: 13px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    font-size: 15px; font-weight: 500; font-family: inherit;
+    cursor: pointer; background: var(--surface);
+    color: var(--text); margin-bottom: 10px;
+    transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .btn:hover { background: var(--surface2); }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--teal); color: white; border-color: transparent; }
+  .btn-primary:hover { background: #0a5c47; }
+  .btn-sm { width: auto; padding: 8px 16px; font-size: 13px; margin-bottom: 0; }
+
+  /* SEPARATOR */
+  .sep { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: var(--text-faint); font-size: 12px; }
+  .sep::before, .sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 12px; box-shadow: var(--shadow); }
+
+  /* ALERTS */
+  .alert { padding: 11px 14px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 14px; line-height: 1.6; }
+  .alert-ok { background: var(--teal-bg); color: var(--teal-text); border: 1px solid rgba(15,110,86,0.15); }
+  .alert-warn { background: var(--amber-bg); color: var(--amber-text); border: 1px solid rgba(179,122,20,0.15); }
+  .alert-err { background: var(--red-bg); color: var(--red-text); border: 1px solid rgba(192,57,43,0.15); }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .badge-in { background: var(--teal-bg); color: var(--teal-text); }
+  .badge-done { background: var(--surface2); color: var(--text-muted); }
+
+  /* PIN PAD */
+  .pin-dots { display: flex; justify-content: center; gap: 14px; margin: 1.5rem 0; }
+  .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border-strong); background: transparent; transition: background .12s, border-color .12s; }
+  .pin-dot.filled { background: var(--text); border-color: var(--text); }
+  .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 240px; margin: 0 auto; }
+  .pin-key {
+    padding: 15px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 20px; font-family: 'DM Mono', monospace; cursor: pointer;
+    background: var(--surface); color: var(--text); text-align: center;
+    transition: all .12s;
+  }
+  .pin-key:hover { background: var(--surface2); }
+  .pin-key:active { transform: scale(0.95); background: var(--surface2); }
+
+  /* SCAN AREA */
+  .scan-box {
+    border: 2px dashed var(--border-strong); border-radius: var(--radius);
+    overflow: hidden; min-height: 220px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1rem; position: relative; background: #000;
+  }
+  .scan-box video { width: 100%; display: block; }
+  .scan-box .scan-placeholder { text-align: center; color: var(--text-faint); padding: 2rem; }
+  .scan-box .scan-placeholder svg { width: 40px; height: 40px; stroke: currentColor; fill: none; stroke-width: 1.5; margin-bottom: 10px; }
+  .scan-line {
+    position: absolute; left: 12%; right: 12%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--teal), transparent);
+    animation: scanMove 2s ease-in-out infinite;
+    top: 30%;
+  }
+  @keyframes scanMove { 0%,100% { top: 25%; } 50% { top: 65%; } }
+
+  /* TABS */
+  .tab-row { display: flex; gap: 6px; margin-bottom: 1rem; background: var(--surface2); border-radius: var(--radius-sm); padding: 4px; }
+  .tab-btn { flex: 1; padding: 8px; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; background: transparent; color: var(--text-muted); transition: all .15s; }
+  .tab-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+
+  /* LOG ENTRIES */
+  .entry { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .entry:last-child { border-bottom: none; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: #D8EEF7; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: #1A5A7A; flex-shrink: 0; font-family: 'DM Mono', monospace; }
+  .entry-info { flex: 1; min-width: 0; }
+  .entry-name { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .entry-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* STATS */
+  .stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-bottom: 1rem; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; box-shadow: var(--shadow); }
+  .stat-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 4px; }
+  .stat-val { font-size: 24px; font-weight: 500; font-family: 'DM Mono', monospace; letter-spacing: -0.5px; }
+
+  /* QR WRAPPER */
+  .qr-wrap { display: flex; flex-direction: column; align-items: center; padding: 1rem 0; }
+  .qr-frame { padding: 14px; background: white; border-radius: var(--radius-sm); border: 1px solid var(--border); display: inline-block; }
+
+  /* SUCCESS */
+  .success-wrap { text-align: center; padding: 1rem 0 1.5rem; }
+  .success-icon { font-size: 56px; margin-bottom: .5rem; }
+
+  /* SETUP */
+  .setup-section { margin-bottom: 1.25rem; }
+  .setup-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 8px; }
+  .code-block { background: #1A1916; color: #C8F5B0; font-family: 'DM Mono', monospace; font-size: 11px; line-height: 1.7; padding: 14px; border-radius: var(--radius-sm); white-space: pre-wrap; word-break: break-all; max-height: 220px; overflow-y: auto; margin-bottom: 8px; }
+  .sync-indicator { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .sync-dot.ok { background: var(--teal); }
+  .sync-dot.off { background: var(--text-faint); }
+
+  canvas#decode-canvas { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="global-nav">
+  <span class="nav-title">CCSL Volunteer Tracker</span>
+  <img class="ic-logo" src="data:image/png;base64,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" alt="IC Logo"/>
+</nav>
+
+
+<!-- ═══════════════════ HOME ═══════════════════ -->
+<div id="s-home" class="screen active">
+  <div class="wordmark" style="margin-bottom:2.5rem;margin-top:.5rem">
+    <div class="wordmark-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 21C12 21 4 13.5 4 8.5a8 8 0 0 1 16 0C20 13.5 12 21 12 21z"/><circle cx="12" cy="8.5" r="2.5"/></svg>
+    </div>
+    <span class="wordmark-text">VolunteerTrack</span>
+  </div>
+  <div class="page-title">Welcome</div>
+  <div class="page-sub">Student NGO check-in system. Select your role to continue.</div>
+  <div id="home-ngo-badge" style="display:none;background:var(--teal-bg);color:var(--teal-text);border:1px solid rgba(15,110,86,0.15);border-radius:var(--radius-sm);padding:8px 14px;font-size:13px;font-weight:500;margin-bottom:1rem"></div>
+
+  <button class="btn btn-primary" onclick="go('s-student-email')">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    I'm a student — get my QR code
+  </button>
+
+  <div class="sep">ngo staff</div>
+
+  <button class="btn" onclick="go('s-ngo-pin')">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h18"/><circle cx="18" cy="7" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="15" cy="17" r="2"/></svg>
+    NGO staff — scan students
+  </button>
+
+  <button class="btn" onclick="go('s-admin-pin')" style="margin-top:4px">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    School admin dashboard
+  </button>
+</div>
+
+<!-- ═══════════════════ STUDENT: ENTER DETAILS ═══════════════════ -->
+<div id="s-student-email" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="go('s-home')">← Back</button>
+  </div>
+  <div class="page-title">Get your QR code</div>
+  <div class="page-sub">Enter your details once. Screenshot your QR code and keep it on your phone — the NGO rep will scan it every time you arrive and leave.</div>
+  <div id="student-alert"></div>
+  <div class="field"><label>School email</label><input type="email" id="stu-email" placeholder="firstname.lastname@school.edu"/></div>
+  <div class="field"><label>Full name</label><input type="text" id="stu-name" placeholder="Your full name"/></div>
+  <button class="btn btn-primary" onclick="genQR()">Generate my QR code</button>
+</div>
+
+<!-- ═══════════════════ STUDENT: QR CODE ═══════════════════ -->
+<div id="s-student-qr" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="go('s-student-email')">← Back</button>
+  </div>
+  <div class="page-title">Your QR code</div>
+  <div class="page-sub">Show this to the NGO rep on every visit. They scan it to check you in and out.</div>
+  <div class="card">
+    <div class="qr-wrap">
+      <div class="qr-frame"><div id="qr-container"></div></div>
+      <div style="margin-top:14px;font-weight:500;font-size:15px" id="qr-name-label"></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:2px" id="qr-email-label"></div>
+    </div>
+  </div>
+  <div class="alert alert-ok">📱 Screenshot this page and save it to your photos. You'll show it at every NGO visit — no internet needed to display it.</div>
+</div>
+
+<!-- ═══════════════════ NGO PIN ═══════════════════ -->
+<div id="s-ngo-pin" class="screen">
+  <div class="topbar"><button class="back-btn" onclick="go('s-home')">← Back</button></div>
+  <div style="text-align:center">
+    <div class="page-title">Staff access</div>
+    <div class="page-sub">Enter the 4-digit PIN to open the scanner</div>
+    <div id="ngo-pin-err" style="font-size:13px;color:var(--red);min-height:18px;margin-bottom:6px"></div>
+    <div class="pin-dots" id="ngo-dots">
+      <div class="pin-dot" id="nd0"></div><div class="pin-dot" id="nd1"></div>
+      <div class="pin-dot" id="nd2"></div><div class="pin-dot" id="nd3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="ngoPin('1')">1</button><button class="pin-key" onclick="ngoPin('2')">2</button><button class="pin-key" onclick="ngoPin('3')">3</button>
+      <button class="pin-key" onclick="ngoPin('4')">4</button><button class="pin-key" onclick="ngoPin('5')">5</button><button class="pin-key" onclick="ngoPin('6')">6</button>
+      <button class="pin-key" onclick="ngoPin('7')">7</button><button class="pin-key" onclick="ngoPin('8')">8</button><button class="pin-key" onclick="ngoPin('9')">9</button>
+      <button class="pin-key" onclick="ngoPin('del')" style="font-size:16px">⌫</button>
+      <button class="pin-key" onclick="ngoPin('0')">0</button>
+      <button class="pin-key" onclick="ngoPin('ok')" style="font-size:14px">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ NGO SELECT ORG ═══════════════════ -->
+<div id="s-ngo-select" class="screen">
+  <div class="topbar"><button class="back-btn" onclick="go('s-home')">🔒 Lock</button></div>
+  <div class="page-title">Select your NGO</div>
+  <div class="page-sub">Choose your organization — all scans today will be logged under it.</div>
+  <div class="field">
+    <label>Organization</label>
+    <select id="ngo-select">
+      <option value="">Choose...</option>
+      <option>Lebanese Food Bank</option>
+      <option>Bassma</option>
+      <option>Operation Big Blue (OBBA)</option>
+      <option>Assabil</option>
+      <option>Ahla Fawda</option>
+      <option>Animals Encounter</option>
+      <option>Order of Malta</option>
+      <option>Min Beib La Beib</option>
+      <option>Caritas</option>
+      <option>Fabric AID</option>
+    </select>
+  </div>
+  <div id="sync-status" class="sync-indicator" style="margin-bottom:14px">
+    <div class="sync-dot off" id="sync-dot"></div>
+    <span id="sync-label" style="color:var(--text-muted)">Google Sheets not configured</span>
+  </div>
+  <button class="btn btn-primary" onclick="startScanner()">Open scanner</button>
+</div>
+
+<!-- ═══════════════════ SCANNER ═══════════════════ -->
+<div id="s-scanner" class="screen">
+  <div class="topbar">
+    <div style="font-size:13px;font-weight:500;color:var(--text-muted)" id="scanner-ngo-label"></div>
+    <button class="back-btn" onclick="stopScanner();go('s-ngo-select')">✕ Done</button>
+  </div>
+  <div id="scan-alert"></div>
+  <div class="scan-box" id="scan-box">
+    <video id="scan-video" autoplay playsinline muted></video>
+    <div class="scan-line" id="scan-line"></div>
+    <canvas id="decode-canvas"></canvas>
+    <div class="scan-placeholder" id="scan-placeholder">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+      <div>Camera loading...</div>
+    </div>
+  </div>
+  <div style="text-align:center;font-size:13px;color:var(--text-muted);margin-bottom:1rem">Point the camera at the student's QR code</div>
+  <div class="tab-row">
+    <button class="tab-btn active" id="vtab-scanner" onclick="switchScanTab('scanner')">Scanner</button>
+    <button class="tab-btn" id="vtab-log" onclick="switchScanTab('log')">Today's log</button>
+  </div>
+  <div id="vpanel-scanner"></div>
+  <div id="vpanel-log" style="display:none">
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-label">Currently in</div><div class="stat-val" id="sc-active">0</div></div>
+      <div class="stat"><div class="stat-label">Completed</div><div class="stat-val" id="sc-done">0</div></div>
+    </div>
+    <div class="card" style="padding:.5rem 1rem" id="sc-log-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CONFIRMED ═══════════════════ -->
+<div id="s-confirmed" class="screen">
+  <div class="success-wrap">
+    <div class="success-icon" id="conf-icon"></div>
+    <div class="page-title" id="conf-title" style="margin-bottom:.35rem"></div>
+    <div class="page-sub" id="conf-sub"></div>
+  </div>
+  <div class="card" id="conf-detail"></div>
+  <div id="conf-sync-note" class="alert" style="display:none"></div>
+  <button class="btn btn-primary" style="margin-top:.5rem" onclick="go('s-scanner');resumeScanner()">Scan next student</button>
+</div>
+
+<!-- ═══════════════════ ADMIN PIN ═══════════════════ -->
+<div id="s-admin-pin" class="screen">
+  <div class="topbar"><button class="back-btn" onclick="go('s-home')">← Back</button></div>
+  <div style="text-align:center">
+    <div class="page-title">Admin access</div>
+    <div class="page-sub">Enter the school admin PIN</div>
+    <div id="admin-pin-err" style="font-size:13px;color:var(--red);min-height:18px;margin-bottom:6px"></div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="ad0"></div><div class="pin-dot" id="ad1"></div>
+      <div class="pin-dot" id="ad2"></div><div class="pin-dot" id="ad3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="adminPin('1')">1</button><button class="pin-key" onclick="adminPin('2')">2</button><button class="pin-key" onclick="adminPin('3')">3</button>
+      <button class="pin-key" onclick="adminPin('4')">4</button><button class="pin-key" onclick="adminPin('5')">5</button><button class="pin-key" onclick="adminPin('6')">6</button>
+      <button class="pin-key" onclick="adminPin('7')">7</button><button class="pin-key" onclick="adminPin('8')">8</button><button class="pin-key" onclick="adminPin('9')">9</button>
+      <button class="pin-key" onclick="adminPin('del')" style="font-size:16px">⌫</button>
+      <button class="pin-key" onclick="adminPin('0')">0</button>
+      <button class="pin-key" onclick="adminPin('ok')" style="font-size:14px">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ ADMIN DASHBOARD ═══════════════════ -->
+<div id="s-admin" class="screen">
+  <div class="topbar">
+    <div class="wordmark-text" style="font-size:15px">Admin dashboard</div>
+    <button class="back-btn" onclick="go('s-home')">🔒 Lock</button>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab-btn active" id="atab-live" onclick="adminTab('live')">Live</button>
+    <button class="tab-btn" id="atab-log" onclick="adminTab('log')">All records</button>
+    <button class="tab-btn" id="atab-setup" onclick="adminTab('setup')">Setup</button>
+  </div>
+
+  <!-- LIVE -->
+  <div id="apanel-live">
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-label">Checked in now</div><div class="stat-val" id="ast-active">0</div></div>
+      <div class="stat"><div class="stat-label">Today's visits</div><div class="stat-val" id="ast-today">0</div></div>
+      <div class="stat"><div class="stat-label">Hours today</div><div class="stat-val" id="ast-hours">0</div></div>
+      <div class="stat"><div class="stat-label">Total all-time</div><div class="stat-val" id="ast-total">0</div></div>
+    </div>
+    <div style="font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px">Currently checked in</div>
+    <div class="card" style="padding:.5rem 1rem" id="admin-live-list"></div>
+  </div>
+
+  <!-- ALL RECORDS -->
+  <div id="apanel-log" style="display:none">
+    <div class="field" style="margin-bottom:10px">
+      <input type="text" id="admin-filter" placeholder="Search by name, email or NGO..." oninput="renderAdminLog()"/>
+    </div>
+    <div class="card" style="padding:.5rem 1rem" id="admin-log-list"></div>
+    <button class="btn btn-sm" style="margin-top:10px" onclick="exportCSV()">⬇ Export CSV</button>
+  </div>
+
+  <!-- SETUP -->
+  <div id="apanel-setup" style="display:none">
+    <div class="card">
+      <div class="setup-label">Google Sheets URL</div>
+      <div class="field" style="margin-bottom:10px">
+        <input type="text" id="setup-url" placeholder="https://script.google.com/macros/s/..." style="font-size:12px;font-family:'DM Mono',monospace"/>
+      </div>
+      <div class="setup-label" style="margin-top:10px">NGO staff PIN</div>
+      <div class="field" style="margin-bottom:10px">
+        <input type="password" id="setup-ngo-pin" placeholder="Current: 1234" maxlength="4"/>
+      </div>
+      <div class="setup-label" style="margin-top:10px">Admin PIN</div>
+      <div class="field" style="margin-bottom:10px">
+        <input type="password" id="setup-admin-pin" placeholder="Current: 9999" maxlength="4"/>
+      </div>
+      <button class="btn btn-primary" onclick="saveSetup()" style="margin-top:4px">Save settings</button>
+    </div>
+
+    <div class="card">
+      <div class="setup-label">Google Apps Script — paste this code</div>
+      <div class="page-sub" style="margin-bottom:10px;font-size:12px">
+        1. Open your Google Sheet → <strong>Extensions → Apps Script</strong><br>
+        2. Delete any existing code and paste the script below<br>
+        3. Click <strong>Deploy → New deployment → Web app</strong><br>
+        4. Execute as: <strong>Me</strong> · Who has access: <strong>Anyone</strong><br>
+        5. Click Deploy → copy the <strong>Web App URL</strong><br>
+        6. Paste it in the field above and hit Save<br>
+        <br>
+        ⚠️ If you redeploy later, always create a <strong>New deployment</strong> (not edit existing) to get a fresh URL.
+      </div>
+      <div class="code-block" id="apps-script-code"></div>
+      <button class="btn btn-sm" onclick="copyScript()">Copy script</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SCRIPTS ═══════════════════ -->
+<script>
+
+
+// ─── STUDENT MODE ───
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('mode') === 'student') {
+    window._studentMode = true;
+  }
+})();
+
+// ─── NGO URL PARAM ───
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const ngoParam = params.get('ngo');
+  if (ngoParam) {
+    // Store it so PIN success goes straight to scanner
+    window._presetNGO = decodeURIComponent(ngoParam);
+  }
+})();
+
+const HARDCODED_SHEETS_URL = "https://script.google.com/macros/s/AKfycbw3FpSnuu5bSMShJz4QVJ3nDrhb2mp1G_ItYRFCUEG6HJRQDPJZBiuwXvg8JFt6yJQ92w/exec";
+const APPS_SCRIPT = `// VolunteerTrack — Google Apps Script
+// Uses doGet() so browsers don't hit CORS errors.
+// Deploy as Web App → Execute as: Me → Who has access: Anyone
+
+function doGet(e) {
+  try {
+    var p      = e.parameter;
+    var action = p.action;
+    var ss     = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet  = ss.getSheetByName("Volunteer Log");
+
+    // Create sheet with headers if it doesn't exist yet
+    if (!sheet) {
+      sheet = ss.insertSheet("Volunteer Log");
+      sheet.appendRow([
+        "Timestamp", "Status", "Student Name",
+        "Email", "NGO", "Check-in Time",
+        "Check-out Time", "Hours"
+      ]);
+      sheet.setFrozenRows(1);
+      // Style header row
+      sheet.getRange(1,1,1,8)
+           .setBackground("#0F6E56")
+           .setFontColor("#FFFFFF")
+           .setFontWeight("bold");
+    }
+
+    if (action === "checkin") {
+      sheet.appendRow([
+        new Date().toISOString(),   // A: Timestamp
+        "CHECKED-IN",               // B: Status
+        p.name,                     // C: Student Name
+        p.email,                    // D: Email
+        p.ngo,                      // E: NGO
+        p.time,                     // F: Check-in Time
+        "",                         // G: Check-out Time
+        ""                          // H: Hours
+      ]);
+
+    } else if (action === "checkout") {
+      var rows = sheet.getDataRange().getValues();
+      for (var i = rows.length - 1; i >= 1; i--) {
+        if (rows[i][3] === p.email &&
+            rows[i][4] === p.ngo  &&
+            rows[i][1] === "CHECKED-IN" &&
+            rows[i][6] === "") {
+          var inTime  = new Date(rows[i][5]);
+          var outTime = new Date(p.time);
+          var hours   = ((outTime - inTime) / 3600000).toFixed(2);
+          var rowNum  = i + 1;
+          sheet.getRange(rowNum, 2).setValue("COMPLETED");
+          sheet.getRange(rowNum, 7).setValue(p.time);
+          sheet.getRange(rowNum, 8).setValue(parseFloat(hours));
+          break;
+        }
+      }
+    }
+
+    // Return JSON with CORS headers
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: true, action: action }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+document.getElementById('apps-script-code').textContent = APPS_SCRIPT;
+
+// ─── STATE ───
+let visits = JSON.parse(localStorage.getItem('vt_visits') || '[]');
+let cfg = JSON.parse(localStorage.getItem('vt_cfg') || '{"ngoPIN":"1234","adminPIN":"9999","sheetsURL":"https://script.google.com/macros/s/AKfycbw3FpSnuu5bSMShJz4QVJ3nDrhb2mp1G_ItYRFCUEG6HJRQDPJZBiuwXvg8JFt6yJQ92w/exec"}');
+// Always ensure the URL is set even if localStorage is empty or stale
+cfg.sheetsURL = cfg.sheetsURL || "https://script.google.com/macros/s/AKfycbw3FpSnuu5bSMShJz4QVJ3nDrhb2mp1G_ItYRFCUEG6HJRQDPJZBiuwXvg8JFt6yJQ92w/exec";
+let currentNGO = '';
+let scanStream = null;
+let scanLoop = null;
+let ngoPinEntry = '';
+let adminPinEntry = '';
+let lastScanned = 0;
+
+function save() { localStorage.setItem('vt_visits', JSON.stringify(visits)); }
+function saveCfg() { localStorage.setItem('vt_cfg', JSON.stringify(cfg)); }
+
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 's-admin') renderAdmin();
+  if (id === 's-ngo-select') {
+    updateSyncStatus();
+    // Pre-select NGO from URL param if present
+    if (window._presetNGO) {
+      const sel = document.getElementById('ngo-select');
+      if (sel) sel.value = window._presetNGO;
+    }
+  }
+}
+
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function fmtTime(iso) { return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+function fmtDate(iso) { return new Date(iso).toLocaleDateString([], { day: 'numeric', month: 'short' }); }
+function initials(name) { return (name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(); }
+
+// ─── SYNC TO SHEETS ───
+function updateSyncStatus() {
+  const dot = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-label');
+  if (cfg.sheetsURL) {
+    dot.className = 'sync-dot ok';
+    label.style.color = 'var(--teal)';
+    label.textContent = 'Google Sheets connected';
+  } else {
+    dot.className = 'sync-dot off';
+    label.style.color = 'var(--text-muted)';
+    label.textContent = 'Google Sheets not configured';
+  }
+}
+
+async function postToSheets(payload) {
+  const sheetUrl = cfg.sheetsURL || HARDCODED_SHEETS_URL;
+if (!sheetUrl) return { ok: false, reason: 'no-url' };
+  try {
+    // GET + URL params avoids all CORS preflight issues with Apps Script
+    const params = new URLSearchParams(payload);
+    const url = sheetUrl + '?' + params.toString();
+    const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch { return { ok: res.ok }; }
+  } catch (e) {
+    return { ok: false, reason: e.message };
+  }
+}
+
+// ─── STUDENT QR ───
+function genQR() {
+  const email = document.getElementById('stu-email').value.trim().toLowerCase();
+  const name = document.getElementById('stu-name').value.trim();
+  const alertEl = document.getElementById('student-alert');
+  if (!email || !name) {
+    alertEl.innerHTML = '<div class="alert alert-warn">Please enter both your email and full name.</div>';
+    return;
+  }
+  alertEl.innerHTML = '';
+  const container = document.getElementById('qr-container');
+  container.innerHTML = '';
+  new QRCode(container, {
+    text: JSON.stringify({ email, name }),
+    width: 180, height: 180,
+    correctLevel: QRCode.CorrectLevel.M
+  });
+  document.getElementById('qr-name-label').textContent = name;
+  document.getElementById('qr-email-label').textContent = email;
+  go('s-student-qr');
+}
+
+// ─── NGO PIN ───
+function ngoPin(k) {
+  const err = document.getElementById('ngo-pin-err');
+  if (k === 'del') { ngoPinEntry = ngoPinEntry.slice(0, -1); }
+  else if (k === 'ok') {
+    if (ngoPinEntry === cfg.ngoPIN) {
+      ngoPinEntry = ''; updateNgoDots();
+      if (window._presetNGO) {
+        // Skip NGO selection — go straight to scanner
+        currentNGO = window._presetNGO;
+        document.getElementById('scanner-ngo-label').textContent = currentNGO;
+        go('s-scanner');
+        renderScanLog();
+        startCamera();
+      } else {
+        go('s-ngo-select');
+      }
+      return;
+    }
+    else { err.textContent = 'Incorrect PIN. Try again.'; ngoPinEntry = ''; updateNgoDots(); return; }
+  } else if (ngoPinEntry.length < 4) { ngoPinEntry += k; }
+  err.textContent = '';
+  updateNgoDots();
+}
+function updateNgoDots() {
+  for (let i = 0; i < 4; i++) document.getElementById('nd' + i).classList.toggle('filled', i < ngoPinEntry.length);
+}
+
+// ─── ADMIN PIN ───
+function adminPin(k) {
+  const err = document.getElementById('admin-pin-err');
+  if (k === 'del') { adminPinEntry = adminPinEntry.slice(0, -1); }
+  else if (k === 'ok') {
+    if (adminPinEntry === cfg.adminPIN) { adminPinEntry = ''; updateAdminDots(); go('s-admin'); return; }
+    else { err.textContent = 'Incorrect PIN. Try again.'; adminPinEntry = ''; updateAdminDots(); return; }
+  } else if (adminPinEntry.length < 4) { adminPinEntry += k; }
+  err.textContent = '';
+  updateAdminDots();
+}
+function updateAdminDots() {
+  for (let i = 0; i < 4; i++) document.getElementById('ad' + i).classList.toggle('filled', i < adminPinEntry.length);
+}
+
+// ─── SCANNER ───
+function startScanner() {
+  const sel = document.getElementById('ngo-select').value;
+  if (!sel) { alert('Please select your organization first.'); return; }
+  currentNGO = sel;
+  document.getElementById('scanner-ngo-label').textContent = sel;
+  go('s-scanner');
+  renderScanLog();
+  startCamera();
+}
+
+function startCamera() {
+  const video = document.getElementById('scan-video');
+  const placeholder = document.getElementById('scan-placeholder');
+  const scanLine = document.getElementById('scan-line');
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    placeholder.innerHTML = '<svg viewBox="0 0 24 24"><line x1="3" y1="3" x2="21" y2="21"/><path d="M3 7v14h14"/><path d="M7 3h14v14"/></svg><div>Camera not available</div>';
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      scanStream = stream;
+      video.srcObject = stream;
+      video.style.display = 'block';
+      if (placeholder) placeholder.style.display = 'none';
+      if (scanLine) scanLine.style.display = 'block';
+      video.play();
+      video.addEventListener('loadedmetadata', tick, { once: true });
+      requestAnimationFrame(tick);
+    })
+    .catch(() => {
+      if (placeholder) placeholder.innerHTML = '<svg viewBox="0 0 24 24"><line x1="3" y1="3" x2="21" y2="21"/><path d="M3 7v14h14"/><path d="M7 3h14v14"/></svg><div>Allow camera access to scan QR codes</div>';
+    });
+}
+
+function tick() {
+  const video = document.getElementById('scan-video');
+  const canvas = document.getElementById('decode-canvas');
+  if (!scanStream) return;
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+    if (code && Date.now() - lastScanned > 3000) {
+      try {
+        const data = JSON.parse(code.data);
+        if (data.email && data.name) {
+          lastScanned = Date.now();
+          stopScanner();
+          processStudent(data.email, data.name);
+          return;
+        }
+      } catch (e) {}
+    }
+  }
+  scanLoop = requestAnimationFrame(tick);
+}
+
+function stopScanner() {
+  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  if (scanLoop) { cancelAnimationFrame(scanLoop); scanLoop = null; }
+}
+
+function resumeScanner() { startCamera(); }
+
+// ─── PROCESS SCAN ───
+async function processStudent(email, name) {
+  const open = visits.find(v => v.email === email && v.ngo === currentNGO && !v.out);
+  const now = new Date().toISOString();
+  let type, hrs = null;
+
+  if (open) {
+    open.out = now;
+    save();
+    hrs = ((new Date(now) - new Date(open.in)) / 3600000).toFixed(2);
+    type = 'out';
+    const res = await postToSheets({ action: 'checkout', email, name, ngo: currentNGO, time: now });
+    showConfirmed('out', name, email, open.in, now, hrs, res);
+  } else {
+    const v = { id: Date.now(), email, name, ngo: currentNGO, in: now, out: null };
+    visits.unshift(v);
+    save();
+    type = 'in';
+    const res = await postToSheets({ action: 'checkin', email, name, ngo: currentNGO, time: now });
+    showConfirmed('in', name, email, now, null, null, res);
+  }
+  renderScanLog();
+}
+
+function showConfirmed(type, name, email, inT, outT, hrs, syncRes) {
+  const isIn = type === 'in';
+  document.getElementById('conf-icon').textContent = isIn ? '✅' : '🏁';
+  document.getElementById('conf-title').textContent = isIn ? 'Checked in!' : 'Checked out!';
+  document.getElementById('conf-sub').textContent = name + ' · ' + currentNGO;
+  document.getElementById('conf-detail').innerHTML = `
+    <div style="font-size:13px;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Student</span><span style="font-weight:500">${name}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Email</span><span style="font-size:12px;font-family:'DM Mono',monospace">${email}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">NGO</span><span>${currentNGO}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Check-in</span><span>${fmtTime(inT)}</span></div>
+      ${outT ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Check-out</span><span>${fmtTime(outT)}</span></div>` : ''}
+      ${hrs ? `<div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:9px;margin-top:2px"><span style="color:var(--text-muted)">Hours logged</span><span style="font-weight:500;font-size:17px;font-family:'DM Mono',monospace">${hrs}h</span></div>` : ''}
+    </div>`;
+
+  const syncNote = document.getElementById('conf-sync-note');
+  if (!cfg.sheetsURL) {
+    syncNote.className = 'alert alert-warn';
+    syncNote.style.display = 'block';
+    syncNote.textContent = '⚠️ Google Sheets not connected. Data saved locally only.';
+  } else if (syncRes && syncRes.ok) {
+    syncNote.className = 'alert alert-ok';
+    syncNote.style.display = 'block';
+    syncNote.textContent = '✓ Synced to Google Sheets';
+  } else {
+    syncNote.className = 'alert alert-warn';
+    syncNote.style.display = 'block';
+    syncNote.textContent = '⚠️ Could not sync to Sheets. Data saved locally.';
+  }
+  go('s-confirmed');
+}
+
+// ─── SCANNER LOG ───
+function switchScanTab(t) {
+  ['scanner', 'log'].forEach(x => {
+    document.getElementById('vtab-' + x).classList.toggle('active', x === t);
+    document.getElementById('vpanel-' + x).style.display = x === t ? 'block' : 'none';
+  });
+  if (t === 'log') renderScanLog();
+}
+
+function renderScanLog() {
+  const today = visits.filter(v => v.ngo === currentNGO && v.in.startsWith(todayStr()));
+  const sc = document.getElementById('sc-active');
+  const sd = document.getElementById('sc-done');
+  if (sc) sc.textContent = today.filter(v => !v.out).length;
+  if (sd) sd.textContent = today.filter(v => v.out).length;
+  const el = document.getElementById('sc-log-list');
+  if (!el) return;
+  if (!today.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:.5rem 0">No scans yet today</div>'; return; }
+  el.innerHTML = today.map(v => {
+    const hrs = v.out ? ((new Date(v.out) - new Date(v.in)) / 3600000).toFixed(2) : null;
+    return `<div class="entry">
+      <div class="avatar">${initials(v.name)}</div>
+      <div class="entry-info">
+        <div class="entry-name">${v.name}</div>
+        <div class="entry-meta">${fmtTime(v.in)}${v.out ? ' → ' + fmtTime(v.out) + (hrs ? ' · <strong>' + hrs + 'h</strong>' : '') : ' · still checked in'}</div>
+      </div>
+      <span class="badge ${v.out ? 'badge-done' : 'badge-in'}">${v.out ? 'Done' : 'In'}</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── ADMIN DASHBOARD ───
+function adminTab(t) {
+  ['live', 'log', 'setup'].forEach(x => {
+    document.getElementById('atab-' + x).classList.toggle('active', x === t);
+    document.getElementById('apanel-' + x).style.display = x === t ? 'block' : 'none';
+  });
+  if (t === 'log') renderAdminLog();
+  if (t === 'setup') {
+    document.getElementById('setup-url').value = cfg.sheetsURL || '';
+  }
+}
+
+function renderAdmin() {
+  const today = visits.filter(v => v.in.startsWith(todayStr()));
+  const active = visits.filter(v => !v.out);
+  const done = today.filter(v => v.out);
+  const totalHrs = done.reduce((s, v) => s + ((new Date(v.out) - new Date(v.in)) / 3600000), 0);
+  document.getElementById('ast-active').textContent = active.length;
+  document.getElementById('ast-today').textContent = today.length;
+  document.getElementById('ast-hours').textContent = totalHrs.toFixed(1);
+  document.getElementById('ast-total').textContent = visits.length;
+
+  const el = document.getElementById('admin-live-list');
+  if (!active.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:.5rem 0">No one currently checked in</div>'; return; }
+  el.innerHTML = active.map(v => {
+    const mins = Math.round((Date.now() - new Date(v.in)) / 60000);
+    const dur = mins < 60 ? mins + 'm' : Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm';
+    return `<div class="entry">
+      <div class="avatar">${initials(v.name)}</div>
+      <div class="entry-info">
+        <div class="entry-name">${v.name}</div>
+        <div class="entry-meta">${v.ngo} · in since ${fmtTime(v.in)} · <strong>${dur}</strong></div>
+      </div>
+      <span class="badge badge-in">In</span>
+    </div>`;
+  }).join('');
+}
+
+function renderAdminLog() {
+  const q = (document.getElementById('admin-filter').value || '').toLowerCase();
+  const filtered = visits.filter(v => !q || v.name.toLowerCase().includes(q) || v.email.includes(q) || v.ngo.toLowerCase().includes(q));
+  const el = document.getElementById('admin-log-list');
+  if (!filtered.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:.5rem 0">No records found</div>'; return; }
+  el.innerHTML = filtered.map(v => {
+    const hrs = v.out ? ((new Date(v.out) - new Date(v.in)) / 3600000).toFixed(2) : null;
+    return `<div class="entry">
+      <div class="avatar">${initials(v.name)}</div>
+      <div class="entry-info">
+        <div class="entry-name">${v.name}</div>
+        <div class="entry-meta">${v.ngo} · ${fmtDate(v.in)} · ${fmtTime(v.in)}${v.out ? ' → ' + fmtTime(v.out) : ''}${hrs ? ' · <strong>' + hrs + 'h</strong>' : ''}</div>
+      </div>
+      <span class="badge ${v.out ? 'badge-done' : 'badge-in'}">${v.out ? 'Done' : 'Open'}</span>
+    </div>`;
+  }).join('');
+}
+
+function saveSetup() {
+  const url = document.getElementById('setup-url').value.trim();
+  const ngoPin = document.getElementById('setup-ngo-pin').value.trim();
+  const adminP = document.getElementById('setup-admin-pin').value.trim();
+  if (url) cfg.sheetsURL = url;
+  if (ngoPin && ngoPin.length === 4 && /^\d+$/.test(ngoPin)) cfg.ngoPIN = ngoPin;
+  if (adminP && adminP.length === 4 && /^\d+$/.test(adminP)) cfg.adminPIN = adminP;
+  saveCfg();
+  alert('Settings saved successfully.');
+}
+
+function copyScript() {
+  navigator.clipboard.writeText(APPS_SCRIPT)
+    .then(() => alert('Script copied! Paste it in Google Apps Script.'))
+    .catch(() => alert('Select and copy the code manually from the box above.'));
+}
+
+function exportCSV() {
+  if (!visits.length) { alert('No records to export yet.'); return; }
+  const rows = [
+    ['Name', 'Email', 'NGO', 'Date', 'Check-in', 'Check-out', 'Hours', 'Status'],
+    ...visits.map(v => {
+      const hrs = v.out ? ((new Date(v.out) - new Date(v.in)) / 3600000).toFixed(2) : '';
+      return [v.name, v.email, v.ngo, v.in.split('T')[0], fmtTime(v.in), v.out ? fmtTime(v.out) : '', hrs, v.out ? 'Completed' : 'Open'];
+    })
+  ];
+  const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'volunteer_log.csv';
+  a.click();
+}
+
+
+
+// Hide staff buttons in student mode
+if (window._studentMode) {
+  const sb = document.getElementById('staff-buttons');
+  if (sb) sb.style.display = 'none';
+  const seps = document.querySelectorAll('.sep');
+  seps.forEach(s => s.style.display = 'none');
+}
+
+// Show NGO badge on home screen if URL param set
+if (window._presetNGO) {
+  const badge = document.getElementById('home-ngo-badge');
+  if (badge) {
+    badge.style.display = 'block';
+    badge.textContent = '📍 NGO link for: ' + window._presetNGO;
+  }
+}
+
+setInterval(() => {
+  if (document.getElementById('s-admin').classList.contains('active')) renderAdmin();
+}, 30000);
+</script>
+</div>
+</body>
+</html>
