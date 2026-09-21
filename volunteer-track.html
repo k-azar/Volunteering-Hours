@@ -221,7 +221,7 @@
     <span class="wordmark-text">VolunteerTrack</span>
   </div>
   <div class="page-title">Welcome</div>
-  <div class="page-sub">Welcome to the IC Students volunteering portal</div>
+  <div class="page-sub">Welcome to the International College volunteering portal</div>
   <div id="home-ngo-badge" style="display:none;background:var(--teal-bg);color:var(--teal-text);border:1px solid rgba(15,110,86,0.15);border-radius:var(--radius-sm);padding:8px 14px;font-size:13px;font-weight:500;margin-bottom:1rem"></div>
 
   <button class="btn btn-primary" onclick="go('s-student-email')">
@@ -463,12 +463,13 @@
 <script>
 
 
-// ─── STUDENT MODE ───
+// ─── MODE DETECTION ───
 (function() {
   const params = new URLSearchParams(window.location.search);
-  if (params.get('mode') === 'student') {
-    window._studentMode = true;
-  }
+  const mode = params.get('mode');
+  if (mode === 'student') window._studentMode = true;
+  if (mode === 'admin')   window._adminMode = true;
+  if (mode === 'ngo' || params.get('ngo')) window._ngoMode = true;
 })();
 
 // ─── NGO URL PARAM ───
@@ -932,13 +933,31 @@ function exportCSV() {
 
 
 
-// Hide staff buttons in student mode
-if (window._studentMode) {
-  const sb = document.getElementById('staff-buttons');
-  if (sb) sb.style.display = 'none';
-  const seps = document.querySelectorAll('.sep');
-  seps.forEach(s => s.style.display = 'none');
-}
+// Show only relevant button based on mode
+(function() {
+  const studentBtn = document.querySelector('.btn-primary[onclick*="s-student-email"]');
+  const staffDiv   = document.getElementById('staff-buttons');
+  const adminBtn   = document.querySelector('.btn[onclick*="s-admin-pin"]');
+
+  if (window._studentMode) {
+    // Student: show only student button
+    if (staffDiv) staffDiv.style.display = 'none';
+  } else if (window._ngoMode) {
+    // NGO link: show only NGO staff button, hide student + admin
+    if (studentBtn) studentBtn.style.display = 'none';
+    if (adminBtn)   adminBtn.style.display = 'none';
+    // hide the separator between student and staff
+    const seps = document.querySelectorAll('.sep');
+    seps.forEach(s => s.style.display = 'none');
+  } else if (window._adminMode) {
+    // Admin link: show only admin button, hide student + ngo
+    if (studentBtn) studentBtn.style.display = 'none';
+    const ngoBtn = document.querySelector('.btn[onclick*="s-ngo-pin"]');
+    if (ngoBtn) ngoBtn.style.display = 'none';
+    const seps = document.querySelectorAll('.sep');
+    seps.forEach(s => s.style.display = 'none');
+  }
+})();
 
 // Show NGO badge on home screen if URL param set
 if (window._presetNGO) {
